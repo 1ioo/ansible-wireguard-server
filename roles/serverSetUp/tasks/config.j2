@@ -1,0 +1,6 @@
+[Interface]
+Address = {{ serverIP }}
+SaveConfig = true
+PostUp = echo 1 > /proc/sys/net/ipv4/ip_forward
+ListenPort = {{ serverPort }}
+PrivateKey = {{ privatekey['content'] | b64decode }}

@@ -1,0 +1,6 @@
+---
+wireguardDirectory: /etc/wireguard
+serverConfigPath: /etc/wireguard/wg0.conf
+serverIP: "192.168.254.138"
+serverPort: "2876"
+dnsServerIP: "8.8.8.8"

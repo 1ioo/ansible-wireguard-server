@@ -1,0 +1,11 @@
+---
+- name: Print Success Message
+  debug:
+    msg: Client configuration moved to /tmp folder.
+  listen: Restart Wireguard
+
+- name: Restart
+  service:
+    name: wg-quick@wg0
+    state: restarted
+  listen: Restart Wireguard

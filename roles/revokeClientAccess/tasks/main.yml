@@ -1,0 +1,44 @@
+---
+- name: Prompt for Client Public Key
+  pause:
+    prompt: Client Public Key > 
+  register: publicKey
+
+- name: Slurp Config File
+  slurp:
+    src: "{{ configFileLocation }}"
+  register: configFile
+    
+- name: Stop Wireguard Service
+  service:
+    name: wg-quick@wg0
+    state: stopped
+  when: "publicKey['user_input'] in (configFile['content'] | b64decode)"
+
+- name: Remove Client
+  lineinfile:
+    path: "{{ configFileLocation }}"
+    state: absent
+    regexp: "{{ item }}"
+  loop:
+    - \[Peer\]
+    - PublicKey = {{ publicKey['user_input'] | regex_escape() }}
+    - AllowedIPs = .*
+    - Endpoint = .*
+  when: "publicKey['user_input'] in (configFile['content'] | b64decode)"
+
+- name: Remove Client
+  replace:
+    path: "{{ configFileLocation }}"
+    replace: ''
+    regexp: |
+      \[Peer\]
+      PublicKey = {{ publicKey['user_input'] | regex_escape() }}
+      AllowedIPs = .*
+      Endpoint = .*
+  when: "publicKey['user_input'] in (configFile['content'] | b64decode)"
+  
+- name: Start Wireguard Service
+  service: 
+    name: wg-quick@wg0
+    state: started

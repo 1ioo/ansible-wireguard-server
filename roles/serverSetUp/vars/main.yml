@@ -1,0 +1,10 @@
+---
+wireguardDirectory: /etc/wireguard
+configPath: /etc/wireguard/wg0.conf
+interface: ens33
+serverIP: 10.8.0.1/24
+serverPort: "2876"
+sshPort: "2244"
+chains:
+  - INPUT
+  - OUTPUT

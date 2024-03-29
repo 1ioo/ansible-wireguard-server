@@ -1,0 +1,58 @@
+---
+- name: Prompt for Name of Client
+  pause:
+    prompt: Name of Client > 
+  register: clientName
+
+- name: Prompt for IP of Client
+  pause:
+    prompt: IP of Client > 
+  register: clientAddress
+
+- name: Prompt for Private Key of Client
+  pause:
+    prompt: Private Key of Client > 
+  register: clientPrivateKey
+
+- name: Prompt for Public Key of Client
+  pause:
+    prompt: Public Key of Client > 
+  register: clientPublicKey
+
+- name: Slurp Server Public Key
+  slurp:
+    src: "{{ wireguardDirectory }}/publickey"
+  register: publickey
+
+- name: Slurp Server Configuration
+  slurp:
+    src: "{{ serverConfigPath }}"
+  register: serverConfigPath
+
+- name: Create Client Configuration
+  blockinfile:
+    create: yes
+    path: "/tmp/{{ clientName['user_input'] }}.conf"
+    state: present
+    marker_begin: CONFIG BEGIN
+    marker_end: CONFIG END
+    content: |
+      [Interface]
+      PrivateKey={{ clientPrivateKey['user_input'] }}
+      Address={{ clientAddress['user_input'] }}/32
+      SaveConfig=true
+      DNS = {{ dnsServerIP }}
+
+      [Peer]
+      PublicKey={{ publickey['content'] | b64decode }}
+      Endpoint={{ serverIP }}:{{ serverPort }}
+      AllowedIPs=0.0.0.0/0
+  when: "clientPublicKey['user_input'] not in (serverConfigPath['content'] | b64decode)"
+  notify: Restart Wireguard
+
+- name: Set Peer on Server
+  command:
+    cmd: sudo wg set wg0 peer {{ clientPublicKey['user_input'] }} allowed-ips {{ clientAddress['user_input'] }}/32
+    chdir: "{{ wireguardDirectory }}"
+  when: "clientPublicKey['user_input'] not in (serverConfigPath['content'] | b64decode)"
+  

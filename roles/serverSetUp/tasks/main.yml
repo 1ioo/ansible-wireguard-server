@@ -1,0 +1,54 @@
+---
+- name: Update and Upgrade system
+  apt:
+    upgrade: true
+    update_cache: true
+
+- name: Install Packages
+  package:
+    name:
+      - wireguard
+      - iptables
+      - iptables-persistent
+      - rsyslog
+    state: present
+
+- name: Server Hardening
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    search_string: "{{ item.search }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - {search: Port 22, line: "Port {{ sshPort }}"}
+    - {search: "#LogLevel INFO", line: LogLevel INFO}
+    - {search: "#PermitRootLogin prohibit-password", line: PermitRootLogin no}
+    - {search: "X11Forwarding yes", line: X11Forwarding no}
+  notify: Restart SSH
+
+- name: Generate Keys
+  shell:
+    cmd: wg genkey | tee privatekey | wg pubkey > publickey
+    creates: "{{ item }}"
+    chdir: "{{ wireguardDirectory }}"
+  loop:
+    - publickey
+
+- name: Slurp Private Key
+  slurp:
+    src: "{{ wireguardDirectory }}/privatekey"
+  register: privatekey
+
+- name: Create Server Configuration
+  template:
+    src: config.j2
+    dest: "{{ configPath }}"
+  notify: Restart WireGuard
+
+- name: Start WireGuard
+  service:
+    name: wg-quick@wg0
+    state: started
+    enabled: true
+
+- include_tasks: setUpIPTables.yml

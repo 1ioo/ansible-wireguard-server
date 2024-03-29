@@ -1,0 +1,38 @@
+---
+- name: WireGuard Server Menu
+  become: true
+  vars:
+    menu:
+      - option: 1
+        name: "Set Up WireGuard Server"
+      - option: 2
+        name: "Create Client Configuration"
+      - option: 3
+        name: "Revoke Client Access"
+  hosts: wireguard
+  tasks:
+    - name: WIREGUARD SERVER
+      pause:
+        prompt: |-
+          WIREGUARD SERVER:
+          =====================================
+          {% for option in menu %}
+          {{ option.option }}- {{ option.name }}
+          {% endfor %}
+          Enter Choice >
+      register: result
+      
+    - name: Set up WireGuard Server
+      include_role:
+        name: serverSetUp
+      when: result.user_input == "1"
+      
+    - name: Create Client Certificates
+      include_role:
+        name: createClientConfig
+      when: result.user_input == "2"
+      
+    - name: Revoke Client Access
+      include_role:
+        name: revokeClientAccess
+      when: result.user_input == "3"
